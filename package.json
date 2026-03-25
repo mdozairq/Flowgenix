@@ -1,10 +1,18 @@
 {
-  "name": "nestjs-generator",
-  "displayName": "NestJS Generator",
+  "name": "Flowgenix",
+  "displayName": "Flowgenix - flow diagrams, documentation and unit test generation",
   "description": "One-click CodeLens to build Cursor prompts for Jest tests, Markdown docs, and Mermaid diagrams.",
   "version": "0.6.0",
-  "publisher": "local",
+  "publisher": "mdozairq",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mdozairq/Flowgenix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mdozairq/Flowgenix/issues"
+  },
+  "homepage": "https://github.com/mdozairq/Flowgenix#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -88,6 +96,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "package": "vsce package --allow-missing-repository --allow-package-all-secrets --allow-package-env-file --no-rewrite-relative-links",
+    "vsce:package": "vsce package --allow-missing-repository --allow-package-all-secrets --allow-package-env-file --no-rewrite-relative-links",
     "vsce": "vsce"
   },
   "dependencies": {

@@ -2,13 +2,13 @@
 
 CodeLens on Nest **controllers** and **services** builds a **structured prompt** (Jest + Markdown + Mermaid) and sends it via **chat / clipboard / LM** (see settings). Output sections are enforced in the prompt: `### TEST`, `### DOCS`, `### DIAGRAM`.
 
-**Implementation deep-dive (architecture, UML, references):** [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
+**Implementation deep-dive (architecture, UML, references):** see `docs/IMPLEMENTATION.md` in the repository (no relative URL in README avoids `vsce package` link-rewrite errors when `repository` is unset).
 
 ## How others can use it
 
 ### Option A — Install a `.vsix` (simplest for teammates)
 
-1. Maintainer runs `npm install` and `npm run package` in this repo (produces `nestjs-generator-<version>.vsix`).
+1. Maintainer runs `npm install` and **`npm run package`** (or **`npm run vsce:package`**) in this repo — **not** bare `vsce package`, which omits required flags. Produces `Flowgenix-<version>.vsix` (or whatever `name` is in `package.json`).
 2. Share the `.vsix` (Slack, Drive, GitHub Releases).
 3. Recipient: **Extensions** → **⋯** → **Install from VSIX…** → pick the file.
 4. Reload the window if prompted.
@@ -98,7 +98,7 @@ npm run compile
 npm run package
 ```
 
-This produces `nestjs-generator-<version>.vsix` (~4–5 MB because **`typescript` is bundled** for the compiler API). The `package` script passes extra `vsce` flags: secret-scan workaround, and **`--no-rewrite-relative-links`** so packaging succeeds without a `repository` URL in `package.json` (otherwise relative links like `docs/IMPLEMENTATION.md` trigger a vsce error). When you publish to GitHub, add a [`repository`](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#publishers-and-personal-access-tokens) field if you want marketplace README links rewritten to absolute URLs.
+This produces `<name>-<version>.vsix` from `package.json` (~4–5 MB because **`typescript` is bundled**). Scripts **`npm run package`** and **`npm run vsce:package`** pass: secret-scan workaround, **`--no-rewrite-relative-links`**, and **`--allow-missing-repository`**. Plain **`vsce package`** skips those and often fails on README links. `package.json` includes **`repository`**, **`bugs`**, and **`homepage`** for the Marketplace and `vsce` (update the GitHub URLs if your repo name or org is different from `mdozairq/Flowgenix`).
 
 To run `vsce` yourself (it is not on your global `PATH`), use **`npx vsce …`** from this folder, or **`npm run vsce -- …`** (example: `npm run vsce -- ls --tree`).
 
