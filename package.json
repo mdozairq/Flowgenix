@@ -1,0 +1,101 @@
+{
+  "name": "nestjs-generator",
+  "displayName": "NestJS Generator",
+  "description": "One-click CodeLens to build Cursor prompts for Jest tests, Markdown docs, and Mermaid diagrams.",
+  "version": "0.6.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onCommand:nestjs.saveArtifacts"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nestjs.generate",
+        "title": "NestJS Generator: Generate Tests + Docs + Diagram"
+      },
+      {
+        "command": "nestjs.saveArtifacts",
+        "title": "NestJS Generator: Save artifacts from chat response"
+      }
+    ],
+    "configuration": {
+      "title": "NestJS Generator",
+      "properties": {
+        "nestjs-generator.maxSourceCharacters": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "markdownDescription": "Max characters of source **embedded in the prompt** (centered on the handler / method). Extraction still uses the full file. `0` = no limit."
+        },
+        "nestjs-generator.promptDelivery": {
+          "type": "string",
+          "enum": ["openChat", "clipboard", "languageModel"],
+          "default": "openChat",
+          "markdownDescription": "**`openChat`** (default): copy prompt, run `chatFocusCommands`, wait, run paste command, then optional `chatSubmitCommand` — best-effort Cursor/VS Code AI chat. **`clipboard`**: copy only. **`languageModel`**: call `vscode.lm` and open the reply in a new Markdown editor (works when a host registers models, e.g. some VS Code setups; often empty in Cursor)."
+        },
+        "nestjs-generator.chatFocusCommands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["aichat.newchataction"],
+          "markdownDescription": "Command IDs run **in order** to open or focus AI chat before pasting. Adjust if your Cursor build uses different IDs (check Keyboard Shortcuts → right-click command → Copy Command ID)."
+        },
+        "nestjs-generator.chatPasteDelayMs": {
+          "type": "number",
+          "default": 350,
+          "minimum": 0,
+          "markdownDescription": "Wait (ms) after focus commands before paste."
+        },
+        "nestjs-generator.chatSubmitDelayMs": {
+          "type": "number",
+          "default": 120,
+          "minimum": 0,
+          "markdownDescription": "Wait (ms) after paste before optional submit command."
+        },
+        "nestjs-generator.chatPasteCommand": {
+          "type": "string",
+          "default": "editor.action.clipboardPasteAction",
+          "markdownDescription": "Command to paste clipboard (must target the focused chat input when chat has focus)."
+        },
+        "nestjs-generator.chatSubmitCommand": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Optional command to submit the chat message (e.g. try `workbench.action.chat.stopListeningAndSubmit` if available). Leave empty to submit manually with Enter."
+        },
+        "nestjs-generator.artifactsDocsDir": {
+          "type": "string",
+          "default": "docs",
+          "markdownDescription": "Workspace-relative directory for generated Markdown docs (per handler: `{Class}.{method}.md`)."
+        },
+        "nestjs-generator.artifactsFlowDir": {
+          "type": "string",
+          "default": "flow",
+          "markdownDescription": "Workspace-relative directory for generated flow Markdown files (Mermaid inside; `{Class}.{method}.md`)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --allow-missing-repository --allow-package-all-secrets --allow-package-env-file --no-rewrite-relative-links",
+    "vsce": "vsce"
+  },
+  "dependencies": {
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.1"
+  }
+}
