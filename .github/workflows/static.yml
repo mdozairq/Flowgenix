@@ -30,6 +30,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Project Pages URL uses the *repository slug* on GitHub (not the extension name).
+      # If this 404s, set Settings → Pages → Source: Deploy from branch → gh-pages / (root).
+      - name: Expected site URL (after Pages is configured)
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          echo "Configure: https://github.com/${GITHUB_REPOSITORY}/settings/pages"
+          echo "Live URL:  https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO}/"
+
       - name: Publish website/ to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
