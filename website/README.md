@@ -8,39 +8,35 @@ Cursor’s [extension verification](https://cursor.com/docs/configuration/extens
 2. The **homepage** on your **Open VSX** extension page set to **this site’s URL** (after deploy).
 3. A forum post in [Extension Verification](https://forum.cursor.com/c/showcase/extension-verification/23).
 
-## GitHub Pages (recommended for this repo)
+## Option A — GitHub Pages (Actions artifact)
 
-Workflow: [`.github/workflows/static.yml`](../.github/workflows/static.yml) pushes the **`website/`** folder to the **`gh-pages`** branch.
+Workflow: [`.github/workflows/static.yml`](../.github/workflows/static.yml) uses **`upload-pages-artifact`** + **`deploy-pages`** (no `gh-pages` branch, no `configure-pages`).
 
-### One-time GitHub settings
+### One-time setup
 
-1. Run the workflow once (push to `main` or **Actions → Run workflow**).
-2. Repo → **Settings** → **Pages**
-3. **Build and deployment** → **Source**: **Deploy from a branch** (not “GitHub Actions”).
-4. **Branch**: `gh-pages` → **Folder**: `/ (root)` → Save.
+1. Repo → **Settings** → **Pages**
+2. **Build and deployment** → **Source**: **GitHub Actions** (not “Deploy from a branch”) → **Save**
+3. Push to `main` or run the workflow manually. Approve the **`github-pages`** environment if GitHub prompts you.
 
-Your site will be at `https://<user>.github.io/<repo>/`, where **`<repo>` is the repository name on GitHub** (the slug in `github.com/<user>/<repo>`), not necessarily the VS Code extension name.
+Your site will be at `https://<user>.github.io/<repo>/` where **`<repo>`** is the GitHub repository slug (`github.com/<user>/<repo>`).
 
-This avoids `actions/configure-pages`, which fails with **“Get Pages site failed”** until Pages is switched to **GitHub Actions** as the source (separate setup).
+### If the deploy job fails
 
-### Workflow green but `github.io/...` is 404
+- **Source must be GitHub Actions** — branch-based Pages and this workflow do not work together until you switch the source.
+- Use the **Visit site** link on the **Pages** settings page for the canonical URL.
 
-1. **Wire Pages to `gh-pages`.** A successful workflow only updates the branch. Open **Settings → Pages** and confirm **Source** is **Deploy from a branch**, **Branch** = `gh-pages`, **Folder** = `/ (root)`. Until that is saved, the site will not be served.
-2. **Use the URL GitHub shows.** On the same **Pages** settings page, use **Visit site** (or the green banner URL). That is the canonical address; it always matches your real repo slug and casing.
-3. **Repo name vs extension name.** If the GitHub repo is e.g. `cursor-hack`, the site is `https://<user>.github.io/cursor-hack/`, not `.../Flowgenix/`, unless you rename the repository.
-4. **Private repository.** `https://github.com/<user>/<repo>` returns **404** to signed-out visitors, but **GitHub Pages** should still be reachable at `https://<user>.github.io/<repo>/` once step 1 is done. If **Pages** visibility is restricted (org policy / Enterprise), fix visibility in **Pages** settings.
-5. **Propagation.** After the first successful configuration, wait a few minutes and hard-refresh; CDN can lag briefly.
+## Option B — Netlify (often simplest)
 
-Each workflow run logs **Expected site URL** and the **Pages settings** link in the job output.
+1. Sign in at [app.netlify.com](https://app.netlify.com)
+2. **Add new site** → **Import an existing project** → connect this GitHub repo
+3. Netlify reads root [`netlify.toml`](../netlify.toml): publish directory **`website`**, no real build step
+4. Deploy — you get a URL like `https://random-name.netlify.app` (rename in **Site settings → Domain**)
 
-### Custom domain (optional)
-
-Add it under the same **Pages** settings page.
+Use that HTTPS URL for Open VSX **Homepage** and Cursor verification.
 
 ## Other hosts
 
-- **Vercel / Netlify / Cloudflare Pages:** root directory = `website`.
-- **Any static host:** upload the contents of `website/`.
+- **Vercel / Cloudflare Pages:** set the published/root directory to **`website`** (or upload the files inside `website/`).
 
 ## After deploy
 

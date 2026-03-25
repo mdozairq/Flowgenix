@@ -1,0 +1,5 @@
+# Deploy without GitHub Pages: https://app.netlify.com → Add site → Import from Git
+# Root has package.json (extension); we only publish the static marketing folder.
+[build]
+  command = "echo 'Static site; no build'"
+  publish = "website"
