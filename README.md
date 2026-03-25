@@ -6,6 +6,8 @@ CodeLens on Nest **controllers** and **services** builds a **structured prompt**
 
 **Implementation deep-dive (architecture, UML, references):** see `docs/IMPLEMENTATION.md` in the repository (no relative URL in README avoids `vsce package` link-rewrite errors when `repository` is unset).
 
+**Cursor verified publisher:** GitHub README alone is not accepted. Deploy the static site in **`website/`** to **your own domain**, then follow **[docs/CURSOR-VERIFICATION.md](docs/CURSOR-VERIFICATION.md)** (Open VSX homepage + [forum post](https://forum.cursor.com/c/showcase/extension-verification/23)). Official steps: [Cursor — Extensions](https://cursor.com/docs/configuration/extensions).
+
 ## How others can use it
 
 ### Option A — Install a `.vsix` (simplest for teammates)
