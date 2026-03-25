@@ -1,11 +1,13 @@
-# Deploy the marketing site in /website to GitHub Pages (GitHub Actions source).
+# Publishes /website to the orphan branch `gh-pages`.
 #
-# ONE-TIME SETUP (required or configure-pages fails with "Get Pages site failed"):
-# 1. Repo → Settings → Pages
-# 2. Under "Build and deployment" → Source: select "GitHub Actions" (NOT "Deploy from a branch")
-# 3. Save, then re-run this workflow (Actions → workflow → Run workflow)
+# Setup (no "GitHub Actions" Pages API — avoids configure-pages "Get Pages site failed"):
+# 1. Push this workflow; wait until the `gh-pages` branch exists (first run creates it).
+# 2. Repo → Settings → Pages
+# 3. Build and deployment → Source: "Deploy from a branch"
+# 4. Branch: gh-pages  /  Folder: / (root)
+# 5. Save
 #
-# Site URL: https://<owner>.github.io/<repo>/
+# Site: https://<owner>.github.io/<repo>/
 
 name: Deploy website to GitHub Pages
 
@@ -15,32 +17,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-gh-pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Publish website/ to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: website
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./website
+          publish_branch: gh-pages
+          force_orphan: true

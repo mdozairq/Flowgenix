@@ -1,6 +1,6 @@
 # Flowgenix public site (Cursor verification)
 
-This folder is a **static site** meant to be hosted on **your own domain** (not GitHub’s `github.io` README flow). Ship **`index.html`**, **`logo.png`** (hero), and **`flowgenix-logo.png`** (nav + favicon) together.
+Ship **`index.html`**, **`logo.png`**, and **`flowgenix-logo.png`** together.
 
 Cursor’s [extension verification](https://cursor.com/docs/configuration/extensions) requires:
 
@@ -8,30 +8,34 @@ Cursor’s [extension verification](https://cursor.com/docs/configuration/extens
 2. The **homepage** on your **Open VSX** extension page set to **this site’s URL** (after deploy).
 3. A forum post in [Extension Verification](https://forum.cursor.com/c/showcase/extension-verification/23).
 
-## Deploy (pick one)
+## GitHub Pages (recommended for this repo)
 
-### GitHub Pages (Actions)
+Workflow: [`.github/workflows/static.yml`](../.github/workflows/static.yml) pushes the **`website/`** folder to the **`gh-pages`** branch.
 
-Workflow: [`.github/workflows/static.yml`](../.github/workflows/static.yml) publishes the **`website/`** folder only.
+### One-time GitHub settings
 
-**If the workflow fails on `configure-pages` with “Get Pages site failed”:**
+1. Run the workflow once (push to `main` or **Actions → Run workflow**).
+2. Repo → **Settings** → **Pages**
+3. **Build and deployment** → **Source**: **Deploy from a branch** (not “GitHub Actions”).
+4. **Branch**: `gh-pages` → **Folder**: `/ (root)` → Save.
 
-1. Open the repo on GitHub → **Settings** → **Pages**.
-2. Under **Build and deployment** → **Source**, choose **GitHub Actions** (not “Deploy from a branch”).
-3. Commit/push or **Actions** → re-run the workflow.
+Your site will be at `https://<user>.github.io/<repo>/`.
 
-Your site will be at `https://<user>.github.io/<repo>/` (unless you use a custom domain on that same Pages settings page).
+This avoids `actions/configure-pages`, which fails with **“Get Pages site failed”** until Pages is switched to **GitHub Actions** as the source (separate setup).
 
-### Other hosts
+### Custom domain (optional)
 
-- **Vercel / Netlify / Cloudflare Pages:** set the **root directory** to `website`.
-- **Any static host:** upload the contents of `website/` to the document root.
+Add it under the same **Pages** settings page.
+
+## Other hosts
+
+- **Vercel / Netlify / Cloudflare Pages:** root directory = `website`.
+- **Any static host:** upload the contents of `website/`.
 
 ## After deploy
 
-1. Note your live URL, e.g. `https://flowgenix.example.com` (must be a real hostname you control).
-2. In the repo, set `package.json` → `"homepage": "https://your-domain.com"` (then republish the extension if you want the manifest to match).
-3. On [open-vsx.org](https://open-vsx.org/), open your extension → edit metadata → set **Homepage** to the **same** URL.
-4. Post on the Cursor forum (Extension Verification) with extension name **Flowgenix** and your website URL so they can confirm the Open VSX link appears in the installation section.
+1. Set `package.json` → `"homepage"` to your live URL (optional).
+2. On [open-vsx.org](https://open-vsx.org/), set extension **Homepage** to the same URL.
+3. Post on the Cursor forum (Extension Verification) with your site URL.
 
-Open VSX listing: [mdozairq.Flowgenix](https://open-vsx.org/extension/mdozairq/Flowgenix)
+Open VSX: [mdozairq.Flowgenix](https://open-vsx.org/extension/mdozairq/Flowgenix)
