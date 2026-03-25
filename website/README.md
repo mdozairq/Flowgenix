@@ -10,8 +10,22 @@ Cursor’s [extension verification](https://cursor.com/docs/configuration/extens
 
 ## Deploy (pick one)
 
-- **Vercel / Netlify / Cloudflare Pages:** connect the repo and set the **root directory** to `website` (or upload only these files).
-- **Any static host:** upload `index.html` to the document root of `https://your-domain.com`.
+### GitHub Pages (Actions)
+
+Workflow: [`.github/workflows/static.yml`](../.github/workflows/static.yml) publishes the **`website/`** folder only.
+
+**If the workflow fails on `configure-pages` with “Get Pages site failed”:**
+
+1. Open the repo on GitHub → **Settings** → **Pages**.
+2. Under **Build and deployment** → **Source**, choose **GitHub Actions** (not “Deploy from a branch”).
+3. Commit/push or **Actions** → re-run the workflow.
+
+Your site will be at `https://<user>.github.io/<repo>/` (unless you use a custom domain on that same Pages settings page).
+
+### Other hosts
+
+- **Vercel / Netlify / Cloudflare Pages:** set the **root directory** to `website`.
+- **Any static host:** upload the contents of `website/` to the document root.
 
 ## After deploy
 
