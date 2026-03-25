@@ -2,7 +2,7 @@
   "name": "Flowgenix",
   "displayName": "Flowgenix - flow diagrams, documentation and unit test generation",
   "description": "One-click CodeLens to build Cursor prompts for Jest tests, Markdown docs, and Mermaid diagrams.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "publisher": "mdozairq",
   "license": "MIT",
   "repository": {
@@ -13,6 +13,7 @@
     "url": "https://github.com/mdozairq/Flowgenix/issues"
   },
   "homepage": "https://github.com/mdozairq/Flowgenix#readme",
+  "icon": "flowgenix-logo.png",
   "engines": {
     "vscode": "^1.85.0"
   },

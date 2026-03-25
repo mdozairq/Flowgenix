@@ -1,4 +1,6 @@
-# NestJS Generator (Cursor / VS Code)
+# Flowgenix (Cursor / VS Code)
+
+Extension manifest **`icon`**: `flowgenix-logo.png` (128×128 PNG for the Marketplace). A higher-res copy is kept as `flowgenix-logo@1024.png` if you need it for marketing or the README.
 
 CodeLens on Nest **controllers** and **services** builds a **structured prompt** (Jest + Markdown + Mermaid) and sends it via **chat / clipboard / LM** (see settings). Output sections are enforced in the prompt: `### TEST`, `### DOCS`, `### DIAGRAM`.
 
