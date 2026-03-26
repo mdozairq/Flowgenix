@@ -6,7 +6,7 @@ import {
   docsArtifactRelative,
   flowArtifactRelative,
   sanitizeFilePart,
-  specPathBesideSource,
+  specPathInSourceTestDir,
   toWorkspaceRelative,
 } from "./artifactPaths";
 import { parseArtifactResponse } from "./artifactParser";
@@ -16,6 +16,7 @@ import type { GenerateCommandArgs } from "./generateArgs";
 import { listMethodGenerateTargets } from "./methodTargetDiscovery";
 import { buildExtractedContext } from "./contextExtractor";
 import { buildPrompt } from "./promptBuilder";
+import { pickPromptSections } from "./promptSections";
 import { truncateSourceAroundFocus } from "./sourceCap";
 import {
   deliverPrompt,
@@ -115,6 +116,11 @@ export function activate(context: vscode.ExtensionContext): void {
           return;
         }
 
+        const sections = await pickPromptSections();
+        if (!sections?.length) {
+          return;
+        }
+
         const wf = vscode.workspace.getWorkspaceFolder(editor.document.uri);
         if (!wf) {
           await vscode.window.showWarningMessage(
@@ -128,7 +134,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const flowDir = cfg.get<string>(FLOW_DIR_KEY, "flow");
 
         const sourceFsPath = editor.document.uri.fsPath;
-        const specAbs = specPathBesideSource(sourceFsPath);
+        const specAbs = specPathInSourceTestDir(sourceFsPath);
         const specExists = await specFileExistsAt(specAbs);
 
         const docsRel = docsArtifactRelative(
@@ -168,14 +174,19 @@ export function activate(context: vscode.ExtensionContext): void {
           maxChars ?? 0
         );
 
-        const prompt = buildPrompt(embeddedCode, ctx, {
-          componentKey: componentKey(resolved.className, resolved.methodName),
-          mermaidDiagramId: mermaidId,
-          docsRelativePath: docsRel,
-          flowRelativePath: flowRel,
-          specRelativePath: specRel,
-          specFileExists: specExists,
-        });
+        const prompt = buildPrompt(
+          embeddedCode,
+          ctx,
+          {
+            componentKey: componentKey(resolved.className, resolved.methodName),
+            mermaidDiagramId: mermaidId,
+            docsRelativePath: docsRel,
+            flowRelativePath: flowRel,
+            specRelativePath: specRel,
+            specFileExists: specExists,
+          },
+          sections
+        );
 
         const delivery = cfg.get<PromptDeliveryMode>(DELIVERY_KEY, "openChat");
 
@@ -200,9 +211,13 @@ export function activate(context: vscode.ExtensionContext): void {
       if (!text.trim()) {
         text = await vscode.env.clipboard.readText();
       }
-      if (!text.includes("### TEST") && !text.includes("### DOCS")) {
+      if (
+        !text.includes("### TEST") &&
+        !text.includes("### DOCS") &&
+        !text.includes("### DIAGRAM")
+      ) {
         await vscode.window.showErrorMessage(
-          "No artifact content found. Paste the full model reply (with ### TEST / ### DOCS / ### DIAGRAM) into the active editor, select it, or copy to clipboard and retry."
+          "No artifact content found. Paste the model reply (with ### TEST, ### DOCS, and/or ### DIAGRAM) into the active editor, select it, or copy to clipboard and retry."
         );
         return;
       }
@@ -230,7 +245,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const docsDir = cfg.get<string>(DOCS_DIR_KEY, "docs");
       const flowDir = cfg.get<string>(FLOW_DIR_KEY, "flow");
 
-      const specAbs = specPathBesideSource(last.sourceFilePath);
+      const specAbs = specPathInSourceTestDir(last.sourceFilePath);
       const docsRel = docsArtifactRelative(
         docsDir,
         last.className,

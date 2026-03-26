@@ -30,11 +30,14 @@ export function flowArtifactRelative(
   return path.join(flowDir, `${key}.md`);
 }
 
-/** Nest convention: same basename as source .ts */
-export function specPathBesideSource(sourceTsPath: string): string {
+/**
+ * Spec file next to the source file, under a sibling `test/` directory
+ * (e.g. `src/cats/cats.controller.ts` → `src/cats/test/cats.controller.spec.ts`).
+ */
+export function specPathInSourceTestDir(sourceTsPath: string): string {
   const dir = path.dirname(sourceTsPath);
   const base = path.basename(sourceTsPath, ".ts");
-  return path.join(dir, `${base}.spec.ts`);
+  return path.join(dir, "test", `${base}.spec.ts`);
 }
 
 /** Paths relative to workspace folder root (POSIX-style for display in prompts). */

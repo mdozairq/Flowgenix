@@ -18,7 +18,7 @@ Flowgenix is built for the case where you already use **AI in the editor** but w
 
 - **Predictable output shape** — Prompts ask for fixed sections (`### TEST`, `### DOCS`, `### DIAGRAM`) so answers are easier to skim, compare, and **parse** into your repo.
 
-- **Fits real workflows** — You can send the prompt through **chat**, **clipboard**, or (where supported) **`vscode.lm`**. After you get a reply, a **save artifacts** command can write **Markdown** under configurable folders (e.g. `docs/`, `flow/`) and **merge** generated tests into the existing `*.spec.ts` beside the source when one already exists—so you iterate instead of replacing wholesale.
+- **Fits real workflows** — You can send the prompt through **chat**, **clipboard**, or (where supported) **`vscode.lm`**. After you get a reply, a **save artifacts** command can write **Markdown** under configurable folders (e.g. `docs/`, `flow/`) and **merge** generated tests into `test/<name>.spec.ts` next to that controller or service file (the `test/` folder is created if needed).
 
 - **Works where you already code** — Same extension host as your Nest repo; no separate doc tool or diagram editor required for the initial pass.
 

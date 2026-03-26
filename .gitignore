@@ -1,5 +1,5 @@
 node_modules
 out
+.docs
 *.vsix
 .DS_Store
-/docs

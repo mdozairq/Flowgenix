@@ -21,7 +21,7 @@ export class NestCodeLensProvider implements vscode.CodeLensProvider {
         new vscode.CodeLens(range, {
           title,
           tooltip:
-            "Copy a structured Cursor prompt for this handler / method (### TEST / ### DOCS / ### DIAGRAM)",
+            "Build a Flowgenix prompt — choose all three or only tests, docs, or diagram",
           command: "nestjs.generate",
           arguments: [t],
         })

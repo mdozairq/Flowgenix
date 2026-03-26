@@ -60,6 +60,7 @@ ${inner}
 
   if (parsed.testSnippet) {
     const specPath = opts.specAbsolutePath;
+    await fs.mkdir(path.dirname(specPath), { recursive: true });
     const banner = `\n\n  // --- nestjs-generator:append:${key} ---\n`;
     const snippet = parsed.testSnippet.trim();
     let specAlreadyThere = false;
