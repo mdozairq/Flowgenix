@@ -39,6 +39,31 @@ function strictHeaderList(want: Set<PromptSection>): string {
     .join(", ");
 }
 
+/**
+ * Diagram size scales with constructor dependencies from CONTEXT (AST when available, else regex).
+ * Caps keep charts from exploding; min ensures room for entry + method + each injectable.
+ */
+function diagramSizeBudget(ctx: ExtractedContext): {
+  depCount: number;
+  nodeMin: number;
+  nodeMax: number;
+  edgeMax: number;
+} {
+  const d = Math.max(0, ctx.dependencies.length);
+  const nodeMin = Math.max(5, 3 + d);
+  const nodeMax = Math.min(
+    72,
+    Math.max(10, 8 + d * 3 + Math.min(12, d))
+  );
+  const edgeMax = Math.min(96, Math.ceil(nodeMax * 1.6) + d + 4);
+  return { depCount: d, nodeMin, nodeMax, edgeMax };
+}
+
+function diagramBudgetSummary(ctx: ExtractedContext): string {
+  const { depCount, nodeMin, nodeMax, edgeMax } = diagramSizeBudget(ctx);
+  return `target ~${nodeMin}-${nodeMax} nodes, at most ${edgeMax} edges (scaled from ${depCount} constructor dependencies in CONTEXT)`;
+}
+
 function focusBlock(ctx: ExtractedContext, want: Set<PromptSection>): string {
   if (!ctx.focusedMethod) {
     return "";
@@ -73,7 +98,8 @@ Do not generate coverage for other handlers or methods in this file.
 
 function artifactInstructionsPartial(
   h: PromptArtifactHints,
-  want: Set<PromptSection>
+  want: Set<PromptSection>,
+  ctx: ExtractedContext
 ): string {
   const lines: string[] = [
     "=====================================",
@@ -95,7 +121,13 @@ function artifactInstructionsPartial(
   lines.push(`- **Unique component key:** \`${h.componentKey}\``);
   if (want.has("diagram")) {
     lines.push(
-      `- **Unique Mermaid diagram id:** \`${h.mermaidDiagramId}\` (use as the main flowchart id / subgraph prefix to avoid collisions)`
+      `- **Unique Mermaid diagram id:** \`${h.mermaidDiagramId}\` (prefix every node id with this to avoid collisions)`
+    );
+    lines.push(
+      "- **Diagram scope:** One **compact** flowchart for **this method only** — full **business logic path** (happy path + real branches in code). Include **every** constructor dependency listed below as a **named node**; add **only** extra nodes for **direct** callees inside the method body. **No** unrelated endpoints, decorative layers, or speculative infra (cache/queue/external API) unless clearly present in the snippet."
+    );
+    lines.push(
+      `- **Diagram size budget:** ${diagramBudgetSummary(ctx)}. Stay within this range while still covering **all** listed dependencies and the real control flow in the snippet.`
     );
   }
 
@@ -125,7 +157,7 @@ function controllerTaskIntro(want: Set<PromptSection>): string {
   }
   if (want.has("diagram")) {
     items.push(
-      `${n++}. Flow Diagram (Mermaid) — **deep**, all major child components`
+      `${n++}. Flow Diagram (Mermaid) — **focused** business flow + **all** injected dependencies from CONTEXT`
     );
   }
   const count = items.length;
@@ -142,7 +174,9 @@ function serviceTaskIntro(want: Set<PromptSection>): string {
     items.push(`${n++}. Documentation — **in-depth**`);
   }
   if (want.has("diagram")) {
-    items.push(`${n++}. Mermaid flow — **deep** dependency chain`);
+    items.push(
+      `${n++}. Mermaid flow — **focused** business logic + **all** injected dependencies from CONTEXT`
+    );
   }
   const count = items.length;
   return `Generate ${count} output${count === 1 ? "" : "s"}:\n\n${items.join("\n")}`;
@@ -155,13 +189,13 @@ function dependencyContextLine(
   const hasT = want.has("test");
   const hasD = want.has("diagram");
   if (hasT && hasD) {
-    return `Constructor / injected dependencies (mock these in tests; show each in diagram):\n${deps}`;
+    return `Constructor / injected dependencies (mock in tests; diagram: **one node per** line below):\n${deps}`;
   }
   if (hasT) {
     return `Constructor / injected dependencies (mock these in tests):\n${deps}`;
   }
   if (hasD) {
-    return `Constructor / injected dependencies (include in the diagram):\n${deps}`;
+    return `Constructor / injected dependencies (diagram: **one node per line below** — use exact type names; no omitted injectables):\n${deps}`;
   }
   return `Constructor / injected dependencies:\n${deps}`;
 }
@@ -177,9 +211,10 @@ function buildControllerPrompt(
   const dtos = formatList(ctx.dtos, "(none detected)");
   const methods = formatList(ctx.publicMethods, "(see code)");
   const scope = focusBlock(ctx, want);
-  const art = artifactInstructionsPartial(h, want);
+  const art = artifactInstructionsPartial(h, want, ctx);
   const intro = controllerTaskIntro(want);
   const headers = strictHeaderList(want);
+  const diagramBudget = want.has("diagram") ? diagramBudgetSummary(ctx) : "";
 
   const outFmt: string[] = ["=====================================", "OUTPUT FORMAT", ""];
 
@@ -237,17 +272,12 @@ function buildControllerPrompt(
       "### DIAGRAM",
       "```mermaid",
       "flowchart TB",
-      `  %% Use diagram id: ${h.mermaidDiagramId}`,
-      `  %% Unique node ids prefixed: ${h.mermaidDiagramId}_`,
-      `  subgraph ${h.mermaidDiagramId}_client["Client / API consumer"]`,
-      "  end",
-      `  subgraph ${h.mermaidDiagramId}_http["HTTP / Nest"]`,
-      "  end",
-      `  subgraph ${h.mermaidDiagramId}_app["${ctx.className}"]`,
-      "  end",
-      `  subgraph ${h.mermaidDiagramId}_deps["Injected services & data"]`,
-      "  end",
-      "  %% Connect: client --> HTTP --> controller method --> each dependency --> DB/cache/events as applicable",
+      `  %% ${h.mermaidDiagramId} — ${diagramBudget}`,
+      "  %% Order: HTTP entry → this handler method → each DI from CONTEXT → internal steps/branches/return",
+      "  %% No empty subgraphs; no speculative DB/cache/queue unless in code",
+      `  ${h.mermaidDiagramId}_entry["${ctx.focusedRoute ?? "HTTP request"}"]`,
+      `  ${h.mermaidDiagramId}_method["${ctx.className}.${ctx.focusedMethod ?? "handler"}()"]`,
+      "  %% link entry --> method, then method --> each injected service/repo (by type name from CONTEXT)",
       "```",
       ""
     );
@@ -278,9 +308,12 @@ function buildControllerPrompt(
     req.push(
       "DIAGRAM REQUIREMENTS:",
       "",
-      `* **Unique** node/subgraph ids prefixed with \`${h.mermaidDiagramId}_\``,
-      `* Include: client → transport → \`${ctx.className}.${ctx.focusedMethod ?? "handler"}\` → **each** injected dependency as its own node → external systems (DB, cache, queue, third-party API) when inferable`,
-      '* No generic single arrow "Controller --> Service"; name **types** from code',
+      `* **Unique** node ids: prefix every id with \`${h.mermaidDiagramId}_\``,
+      "* **Coverage:** Map **only** the execution path for **this** handler. Start from the HTTP entry (use the focused route if known), then **this method**, then **every** constructor dependency from CONTEXT as its **own** labeled node (use the **injected type** from the list, not generic “Service”).",
+      "* **Business logic:** Inside the method, show **real** steps: validation, calls to those deps, conditional branches, throws/returns that appear in the **shown code**. Merge trivial linear steps into one node if it keeps the chart readable.",
+      "* **Extra nodes:** Add a node only for a **direct** callee in the method body that is **not** already listed as a constructor dependency (e.g. static util) — keep such extras minimal.",
+      `* **Size:** Aim for ${diagramBudget}. **Do not** add unrelated modules, other routes, or speculative external systems unless they are **explicitly** used in the snippet.`,
+      "* **No clutter:** No duplicate nodes for the same type; no empty subgraphs; no decorative “client layer” unless it carries a real branch.",
       ""
     );
   }
@@ -329,9 +362,10 @@ function buildServicePrompt(
   const methods = formatList(ctx.publicMethods, "(see code)");
   const dtos = formatList(ctx.dtos, "(none detected)");
   const scope = focusBlock(ctx, want);
-  const art = artifactInstructionsPartial(h, want);
+  const art = artifactInstructionsPartial(h, want, ctx);
   const intro = serviceTaskIntro(want);
   const headers = strictHeaderList(want);
+  const diagramBudget = want.has("diagram") ? diagramBudgetSummary(ctx) : "";
 
   const outFmt: string[] = ["=====================================", "OUTPUT FORMAT", ""];
 
@@ -380,13 +414,10 @@ function buildServicePrompt(
       "### DIAGRAM",
       "```mermaid",
       "flowchart TB",
-      `  %% id: ${h.mermaidDiagramId}`,
-      `  subgraph ${h.mermaidDiagramId}_caller["Callers"]`,
-      "  end",
-      `  subgraph ${h.mermaidDiagramId}_svc["${ctx.className}"]`,
-      "  end",
-      `  subgraph ${h.mermaidDiagramId}_deps["Downstream dependencies"]`,
-      "  end",
+      `  %% ${h.mermaidDiagramId} — ${diagramBudget}`,
+      "  %% Caller/context (one node) → this method → each DI from CONTEXT → logic branches",
+      `  ${h.mermaidDiagramId}_entry["Caller → ${ctx.className}.${ctx.focusedMethod ?? "method"}()"]`,
+      "  %% expand: one node per constructor dependency from CONTEXT; then method-body flow",
       "```",
       ""
     );
@@ -404,7 +435,7 @@ function buildServicePrompt(
   }
   if (want.has("diagram")) {
     req.push(
-      `* Diagram: unique \`${h.mermaidDiagramId}_*\` ids; show **each** dependency and external I/O (DB, HTTP client, bus)`,
+      `* Diagram: prefix all node ids with \`${h.mermaidDiagramId}_\`. **One node per** constructor dependency from CONTEXT (named by **injected type**). Show **this method's** business flow only — branches/returns from the **shown code**. Aim for ${diagramBudget}. **No** speculative DB/HTTP/bus nodes unless clearly present in the snippet.`,
       ""
     );
   }
