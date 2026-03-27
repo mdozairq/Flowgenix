@@ -33,8 +33,7 @@
   },
   "categories": [
     "Testing",
-    "Visualization",
-    "Documentation"
+    "Visualization"
   ],
   "activationEvents": [
     "onLanguage:typescript",
