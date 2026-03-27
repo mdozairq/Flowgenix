@@ -5,33 +5,59 @@ export interface ParsedArtifacts {
 }
 
 /**
+ * Find the index of `header` that appears **outside** any code fence.
+ * This prevents matching a header inside a previous section's code block.
+ */
+function findHeaderOutsideFence(full: string, header: string): number {
+  const lines = full.split("\n");
+  let inFence = false;
+  let offset = 0;
+  for (const line of lines) {
+    if (/^```/.test(line.trimStart())) {
+      inFence = !inFence;
+    }
+    if (!inFence) {
+      const col = line.indexOf(header);
+      if (col >= 0) {
+        return offset + col;
+      }
+    }
+    offset += line.length + 1;
+  }
+  return -1;
+}
+
+/**
  * Extract fenced content after a markdown header (e.g. ### TEST).
- * First ``` fence after the header wins.
+ * Handles nested fences by tracking fence depth (backtick count).
  */
 function extractAfterHeader(
   full: string,
   header: string
 ): string | null {
-  const idx = full.indexOf(header);
+  const idx = findHeaderOutsideFence(full, header);
   if (idx < 0) {
     return null;
   }
   const after = full.slice(idx + header.length);
-  const startFence = after.indexOf("```");
-  if (startFence < 0) {
+  const openMatch = after.match(/(`{3,})/);
+  if (!openMatch) {
     return null;
   }
-  const afterOpen = after.slice(startFence + 3);
+  const openLen = openMatch[1].length;
+  const fenceStart = openMatch.index!;
+  const afterOpen = after.slice(fenceStart + openLen);
   const nl = afterOpen.indexOf("\n");
   if (nl < 0) {
     return null;
   }
-  const bodyStart = nl + 1;
-  const endFence = afterOpen.indexOf("```", bodyStart);
-  if (endFence < 0) {
+  const body = afterOpen.slice(nl + 1);
+  const closePattern = new RegExp(`^(\`{${openLen},})\\s*$`, "m");
+  const closeMatch = body.match(closePattern);
+  if (!closeMatch) {
     return null;
   }
-  return afterOpen.slice(bodyStart, endFence).trim();
+  return body.slice(0, closeMatch.index!).trim();
 }
 
 export function parseArtifactResponse(full: string): ParsedArtifacts {

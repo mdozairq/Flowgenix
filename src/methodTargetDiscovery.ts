@@ -2,28 +2,8 @@ import * as vscode from "vscode";
 import * as ts from "typescript";
 import { detectNestComponent } from "./contextExtractor";
 import type { GenerateCommandArgs } from "./generateArgs";
-import { HTTP_VERBS, decoratorName, routeLabelForMethod } from "./nestTsDecorators";
-
-function isPublicMethod(
-  member: ts.ClassElement
-): member is ts.MethodDeclaration {
-  if (!ts.isMethodDeclaration(member)) {
-    return false;
-  }
-  if (!member.name || !ts.isIdentifier(member.name)) {
-    return false;
-  }
-  if (member.name.text === "constructor") {
-    return false;
-  }
-  const mods = ts.canHaveModifiers(member)
-    ? ts.getModifiers(member)
-    : undefined;
-  if (mods?.some((m) => m.kind === ts.SyntaxKind.PrivateKeyword)) {
-    return false;
-  }
-  return true;
-}
+import { HTTP_VERBS, decoratorName, isPublicMethod, routeLabelForMethod } from "./nestTsDecorators";
+import { getOrCreateSourceFile } from "./sourceFileCache";
 
 function methodLensStart(
   method: ts.MethodDeclaration,
@@ -37,11 +17,17 @@ function methodLensStart(
 }
 
 function exportClassCharIndex(fullText: string, className: string): number {
-  const standard = fullText.indexOf(`export class ${className}`);
-  if (standard >= 0) {
-    return standard;
+  for (const prefix of [
+    `export class ${className}`,
+    `export abstract class ${className}`,
+    `export default class ${className}`,
+  ]) {
+    const idx = fullText.indexOf(prefix);
+    if (idx >= 0) {
+      return idx;
+    }
   }
-  return fullText.indexOf(`export abstract class ${className}`);
+  return -1;
 }
 
 /**
@@ -55,13 +41,7 @@ export function listMethodGenerateTargets(
   }
   const fullText = document.getText();
   const filePath = document.uri.fsPath;
-  const sf = ts.createSourceFile(
-    filePath,
-    fullText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS
-  );
+  const sf = getOrCreateSourceFile(filePath, fullText, document.version);
   const out: GenerateCommandArgs[] = [];
 
   const visit = (node: ts.Node): void => {

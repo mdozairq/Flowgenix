@@ -10,24 +10,24 @@ export function componentKey(className: string, methodName: string): string {
   return `${className}.${methodName}`;
 }
 
-/** e.g. docs/CatsController.findAll.md */
+/** e.g. docs/CatsController.findAll.md (POSIX slashes for prompt embedding) */
 export function docsArtifactRelative(
   docsDir: string,
   className: string,
   methodName: string
 ): string {
   const key = `${sanitizeFilePart(className)}.${sanitizeFilePart(methodName)}`;
-  return path.join(docsDir, `${key}.md`);
+  return path.posix.join(docsDir, `${key}.md`);
 }
 
-/** e.g. flow/CatsController.findAll.md (markdown wrapping mermaid) */
+/** e.g. flow/CatsController.findAll.md (POSIX slashes for prompt embedding) */
 export function flowArtifactRelative(
   flowDir: string,
   className: string,
   methodName: string
 ): string {
   const key = `${sanitizeFilePart(className)}.${sanitizeFilePart(methodName)}`;
-  return path.join(flowDir, `${key}.md`);
+  return path.posix.join(flowDir, `${key}.md`);
 }
 
 /**

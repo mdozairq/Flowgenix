@@ -9,8 +9,10 @@ import {
   controllerBasePath,
   decoratorName,
   firstStringArg,
+  isPublicMethod,
   joinNestRoute,
 } from "./nestTsDecorators";
+import { getOrCreateSourceFile } from "./sourceFileCache";
 import type { ExtractedContext, NestComponentKind } from "./contextExtractor";
 
 function extractRoutesAst(
@@ -100,26 +102,6 @@ function extractDependenciesAst(
   return [...new Set(deps)];
 }
 
-function isPublicMethod(
-  member: ts.ClassElement
-): member is ts.MethodDeclaration {
-  if (!ts.isMethodDeclaration(member)) {
-    return false;
-  }
-  if (!member.name || !ts.isIdentifier(member.name)) {
-    return false;
-  }
-  if (member.name.text === "constructor") {
-    return false;
-  }
-  const mods = ts.canHaveModifiers(member)
-    ? ts.getModifiers(member)
-    : undefined;
-  if (mods?.some((m) => m.kind === ts.SyntaxKind.PrivateKeyword)) {
-    return false;
-  }
-  return true;
-}
 
 function extractPublicMethodsAst(
   classNode: ts.ClassDeclaration,
@@ -255,13 +237,7 @@ export function tryBuildExtractedContextFromAst(
   kind: NestComponentKind,
   focusMethod?: string
 ): ExtractedContext | null {
-  const sourceFile = ts.createSourceFile(
-    filePath,
-    fullText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS
-  );
+  const sourceFile = getOrCreateSourceFile(filePath, fullText, -1);
 
   const classNode = findClassDeclaration(
     sourceFile,

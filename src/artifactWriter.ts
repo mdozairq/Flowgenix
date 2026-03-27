@@ -27,12 +27,10 @@ export async function writeParsedArtifacts(
   const docAbs = absFromWorkspaceRoot(opts.workspaceRoot, opts.docsRelativePath);
   const flowAbs = absFromWorkspaceRoot(opts.workspaceRoot, opts.flowRelativePath);
 
-  await fs.mkdir(path.dirname(docAbs), { recursive: true });
-  await fs.mkdir(path.dirname(flowAbs), { recursive: true });
-
   const key = componentKey(opts.className, opts.methodName);
 
   if (parsed.docsMarkdown) {
+    await fs.mkdir(path.dirname(docAbs), { recursive: true });
     await fs.writeFile(docAbs, parsed.docsMarkdown, "utf8");
     written.push(docAbs);
   } else {
@@ -40,6 +38,7 @@ export async function writeParsedArtifacts(
   }
 
   if (parsed.diagramMermaid) {
+    await fs.mkdir(path.dirname(flowAbs), { recursive: true });
     let inner = parsed.diagramMermaid.trim();
     if (inner.startsWith("```")) {
       inner = inner.replace(/^```(?:mermaid)?\s*/iu, "").replace(/```\s*$/u, "").trim();

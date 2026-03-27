@@ -6,5 +6,11 @@ src/**
 **/*.map
 node_modules/**
 !node_modules/typescript/**
-!node_modules/@types/**
 **/.eslintrc.json
+website/**
+docs/**
+.github/**
+slides/**
+netlify.toml
+*.vsix
+package-lock.json

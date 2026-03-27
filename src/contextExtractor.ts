@@ -38,29 +38,63 @@ export function detectNestComponent(
     return "controller";
   }
   const isInjectable = /@Injectable\s*(?:\(|$)/m.test(before);
-  const looksLikeService =
-    /Service$/u.test(className) || /\.service\.ts$/iu.test(filePath);
-  if (isInjectable && looksLikeService) {
+  if (isInjectable) {
     return "service";
+  }
+  return null;
+}
+
+/** Extract balanced constructor parameter text (handles `)` inside defaults). */
+function extractCtorParams(classBody: string): string | null {
+  const ctorIdx = classBody.search(/constructor\s*\(/);
+  if (ctorIdx < 0) {
+    return null;
+  }
+  const parenStart = classBody.indexOf("(", ctorIdx);
+  if (parenStart < 0) {
+    return null;
+  }
+  let depth = 0;
+  for (let i = parenStart; i < classBody.length; i++) {
+    const ch = classBody[i];
+    if (ch === "(") {
+      depth++;
+    } else if (ch === ")") {
+      depth--;
+      if (depth === 0) {
+        return classBody.slice(parenStart + 1, i);
+      }
+    }
   }
   return null;
 }
 
 /** Constructor / field injection: `constructor(private readonly x: Foo)` */
 export function extractDependencies(classBody: string): string[] {
-  const ctorMatch = classBody.match(/constructor\s*\(([\s\S]*?)\)\s*\{/);
-  if (!ctorMatch) {
+  const params = extractCtorParams(classBody);
+  if (params === null) {
     return [];
   }
-  const params = ctorMatch[1];
   const deps: string[] = [];
-  const paramRegex =
+  const accessorRegex =
     /(?:private|public|protected|readonly)\s+(?:readonly\s+)?(\w+)\s*:\s*([^,)]+)/g;
   let m: RegExpExecArray | null;
-  while ((m = paramRegex.exec(params)) !== null) {
+  while ((m = accessorRegex.exec(params)) !== null) {
     const typeName = m[2].trim().replace(/\s*=\s*.*$/u, "").trim();
     if (typeName && !/^(string|number|boolean|void|any|unknown)$/iu.test(typeName)) {
       deps.push(`${m[1].trim()}: ${typeName}`);
+    }
+  }
+  const bareRegex = /(?:^|,)\s*(?:@\w+\([^)]*\)\s+)?(\w+)\s*:\s*([^,)]+)/g;
+  while ((m = bareRegex.exec(params)) !== null) {
+    const name = m[1].trim();
+    const typeName = m[2].trim().replace(/\s*=\s*.*$/u, "").trim();
+    if (
+      typeName &&
+      !/^(string|number|boolean|void|any|unknown)$/iu.test(typeName) &&
+      !deps.some((d) => d.startsWith(`${name}:`))
+    ) {
+      deps.push(`${name}: ${typeName}`);
     }
   }
   return [...new Set(deps)];
@@ -70,7 +104,7 @@ export function extractDependencies(classBody: string): string[] {
 export function extractRoutes(classBlock: string): string[] {
   const routes: string[] = [];
   const methodDecorators =
-    /@(Get|Post|Put|Patch|Delete|Options|Head|All)\s*\(\s*(?:['`]([^'`]*)['`])?\s*\)/giu;
+    /@(Get|Post|Put|Patch|Delete|Options|Head|All)\s*\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/giu;
   let m: RegExpExecArray | null;
   while ((m = methodDecorators.exec(classBlock)) !== null) {
     const verb = m[1].toUpperCase();
@@ -107,7 +141,7 @@ export function extractPublicMethods(classBlock: string): string[] {
     if (
       name === "constructor" ||
       name.startsWith("_") ||
-      /^(if|for|while|switch|catch)$/u.test(name)
+      /^(if|for|while|switch|catch|get|set)$/u.test(name)
     ) {
       continue;
     }
@@ -137,7 +171,7 @@ function extractRoutesForMethodRegex(
   const before = classBlock.slice(0, idx);
   const last: string[] = [];
   const decRe =
-    /@(Get|Post|Put|Patch|Delete|Options|Head|All)\s*\(\s*(?:['`]([^'`]*)['`])?\s*\)/giu;
+    /@(Get|Post|Put|Patch|Delete|Options|Head|All)\s*\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/giu;
   let m: RegExpExecArray | null;
   while ((m = decRe.exec(before)) !== null) {
     const verb = m[1].toUpperCase();

@@ -29,16 +29,6 @@ function toWantSet(sections?: readonly PromptSection[]): Set<PromptSection> {
   return new Set(sections);
 }
 
-function strictHeaderList(want: Set<PromptSection>): string {
-  return [
-    want.has("test") && "### TEST",
-    want.has("docs") && "### DOCS",
-    want.has("diagram") && "### DIAGRAM",
-  ]
-    .filter(Boolean)
-    .join(", ");
-}
-
 /**
  * Diagram size scales with constructor dependencies from CONTEXT (AST when available, else regex).
  * Caps keep charts from exploding; min ensures room for entry + method + each injectable.
@@ -213,119 +203,30 @@ function buildControllerPrompt(
   const scope = focusBlock(ctx, want);
   const art = artifactInstructionsPartial(h, want, ctx);
   const intro = controllerTaskIntro(want);
-  const headers = strictHeaderList(want);
   const diagramBudget = want.has("diagram") ? diagramBudgetSummary(ctx) : "";
 
-  const outFmt: string[] = ["=====================================", "OUTPUT FORMAT", ""];
-
+  const brief: string[] = [];
   if (want.has("test")) {
-    outFmt.push(
-      "### TEST",
-      "```ts",
+    brief.push(
       h.specFileExists
-        ? `// APPEND ONLY — nested describe/it for ${h.componentKey} only`
-        : "// FULL .spec.ts if file missing",
-      "```",
-      ""
+        ? `- **### TEST** — append-only Jest block for \`${h.componentKey}\` (mock all deps, cover success/4xx/5xx)`
+        : `- **### TEST** — full \`.spec.ts\` for \`${h.componentKey}\` (mock all deps, cover success/4xx/5xx)`
     );
   }
   if (want.has("docs")) {
-    outFmt.push(
-      "### DOCS",
-      "```md",
-      `# ${h.componentKey} — API handler`,
-      "",
-      `> Saved to: ${h.docsRelativePath}`,
-      "",
-      "## Overview",
-      "...",
-      "",
-      "## Route & HTTP",
-      "...",
-      "",
-      "## Request / response",
-      "...",
-      "",
-      "## Validation & DTOs",
-      "...",
-      "",
-      "## Auth / guards / interceptors (infer from code or note if unknown)",
-      "...",
-      "",
-      "## Child components & call graph",
-      `Document each injected dependency (${deps}) and how this handler uses it. Name **concrete** Nest/provider class names.`,
-      "",
-      "## Error & edge cases",
-      "...",
-      "",
-      "## Related modules (infer)",
-      "...",
-      "",
-      "## Manual testing tips",
-      "...",
-      "```",
-      ""
+    brief.push(
+      `- **### DOCS** — Markdown doc for \`${h.componentKey}\` (overview, route, request/response, deps, errors)`
     );
   }
   if (want.has("diagram")) {
-    outFmt.push(
-      "### DIAGRAM",
-      "```mermaid",
-      "flowchart TB",
-      `  %% ${h.mermaidDiagramId} — ${diagramBudget}`,
-      "  %% Order: HTTP entry → this handler method → each DI from CONTEXT → internal steps/branches/return",
-      "  %% No empty subgraphs; no speculative DB/cache/queue unless in code",
-      `  ${h.mermaidDiagramId}_entry["${ctx.focusedRoute ?? "HTTP request"}"]`,
-      `  ${h.mermaidDiagramId}_method["${ctx.className}.${ctx.focusedMethod ?? "handler"}()"]`,
-      "  %% link entry --> method, then method --> each injected service/repo (by type name from CONTEXT)",
-      "```",
-      ""
-    );
-  }
-
-  const req: string[] = ["====================================="];
-  if (want.has("test")) {
-    req.push(
-      "TEST REQUIREMENTS:",
-      "",
-      "* Use @nestjs/testing where a module is needed; follow merge rules above",
-      "* Mock **all** constructor dependencies listed in CONTEXT",
-      "* Cover **this** route: success, 4xx validation, 5xx / service failure, auth if applicable",
-      ""
-    );
-  }
-  if (want.has("docs")) {
-    req.push(
-      "DOC REQUIREMENTS:",
-      "",
-      `* Deep, technical; use **${h.componentKey}** in the title`,
-      "* Explicitly walk **child** services/repos/guards (from dependencies list and code)",
-      `* Mention file path \`${h.docsRelativePath}\` once in an HTML comment or blockquote at top if desired`,
-      ""
-    );
-  }
-  if (want.has("diagram")) {
-    req.push(
-      "DIAGRAM REQUIREMENTS:",
-      "",
-      `* **Unique** node ids: prefix every id with \`${h.mermaidDiagramId}_\``,
-      "* **Coverage:** Map **only** the execution path for **this** handler. Start from the HTTP entry (use the focused route if known), then **this method**, then **every** constructor dependency from CONTEXT as its **own** labeled node (use the **injected type** from the list, not generic “Service”).",
-      "* **Business logic:** Inside the method, show **real** steps: validation, calls to those deps, conditional branches, throws/returns that appear in the **shown code**. Merge trivial linear steps into one node if it keeps the chart readable.",
-      "* **Extra nodes:** Add a node only for a **direct** callee in the method body that is **not** already listed as a constructor dependency (e.g. static util) — keep such extras minimal.",
-      `* **Size:** Aim for ${diagramBudget}. **Do not** add unrelated modules, other routes, or speculative external systems unless they are **explicitly** used in the snippet.`,
-      "* **No clutter:** No duplicate nodes for the same type; no empty subgraphs; no decorative “client layer” unless it carries a real branch.",
-      ""
+    brief.push(
+      `- **### DIAGRAM** — compact Mermaid flowchart (prefix ids with \`${h.mermaidDiagramId}_\`, ${diagramBudget})`
     );
   }
 
   return `You are a senior NestJS backend engineer.
 
 ${intro}
-
-STRICT RULES:
-- Follow exact output format (${headers} only; no extra sections)
-- Do not add explanations outside those sections
-- Include every section listed above — do not omit any
 ${scope}
 ${art}
 =====================================
@@ -347,8 +248,7 @@ ${dtos}
 Methods (scoped):
 ${methods}
 
-${outFmt.join("\n")}
-${req.join("\n")}
+${brief.join("\n")}
 `;
 }
 
@@ -364,90 +264,30 @@ function buildServicePrompt(
   const scope = focusBlock(ctx, want);
   const art = artifactInstructionsPartial(h, want, ctx);
   const intro = serviceTaskIntro(want);
-  const headers = strictHeaderList(want);
   const diagramBudget = want.has("diagram") ? diagramBudgetSummary(ctx) : "";
 
-  const outFmt: string[] = ["=====================================", "OUTPUT FORMAT", ""];
-
+  const brief: string[] = [];
   if (want.has("test")) {
-    outFmt.push(
-      "### TEST",
-      "```ts",
+    brief.push(
       h.specFileExists
-        ? `// APPEND ONLY — nested describe/it for ${h.componentKey} only`
-        : "// FULL .spec.ts if file missing",
-      "```",
-      ""
+        ? `- **### TEST** — append-only Jest block for \`${h.componentKey}\` (mock all deps)`
+        : `- **### TEST** — full \`.spec.ts\` for \`${h.componentKey}\` (mock all deps)`
     );
   }
   if (want.has("docs")) {
-    outFmt.push(
-      "### DOCS",
-      "```md",
-      `# ${h.componentKey} — service method`,
-      "",
-      `> Saved to: ${h.docsRelativePath}`,
-      "",
-      "## Overview",
-      "...",
-      "",
-      `## Public API — ${ctx.focusedMethod ?? "method"}`,
-      "...",
-      "",
-      "## Dependencies & collaborators",
-      `For each: ${deps}`,
-      "",
-      "## Data flow & side effects",
-      "...",
-      "",
-      "## Error handling & edge cases",
-      "...",
-      "",
-      "## How controllers/guards typically call this (infer)",
-      "...",
-      "```",
-      ""
+    brief.push(
+      `- **### DOCS** — Markdown doc for \`${h.componentKey}\` (overview, public API, deps, data flow, errors)`
     );
   }
   if (want.has("diagram")) {
-    outFmt.push(
-      "### DIAGRAM",
-      "```mermaid",
-      "flowchart TB",
-      `  %% ${h.mermaidDiagramId} — ${diagramBudget}`,
-      "  %% Caller/context (one node) → this method → each DI from CONTEXT → logic branches",
-      `  ${h.mermaidDiagramId}_entry["Caller → ${ctx.className}.${ctx.focusedMethod ?? "method"}()"]`,
-      "  %% expand: one node per constructor dependency from CONTEXT; then method-body flow",
-      "```",
-      ""
-    );
-  }
-
-  const req: string[] = ["=====================================", "Requirements:", ""];
-  if (want.has("test")) {
-    req.push("* Tests: follow merge rules; mock **all** injected dependencies", "");
-  }
-  if (want.has("docs")) {
-    req.push(
-      "* Docs: name all **child** components from constructor and method body",
-      ""
-    );
-  }
-  if (want.has("diagram")) {
-    req.push(
-      `* Diagram: prefix all node ids with \`${h.mermaidDiagramId}_\`. **One node per** constructor dependency from CONTEXT (named by **injected type**). Show **this method's** business flow only — branches/returns from the **shown code**. Aim for ${diagramBudget}. **No** speculative DB/HTTP/bus nodes unless clearly present in the snippet.`,
-      ""
+    brief.push(
+      `- **### DIAGRAM** — compact Mermaid flowchart (prefix ids with \`${h.mermaidDiagramId}_\`, ${diagramBudget})`
     );
   }
 
   return `You are a senior NestJS backend engineer.
 
 ${intro}
-
-STRICT RULES:
-- Follow exact output format (${headers} only; no extra sections)
-- Do not add explanations outside those sections
-- Include every section listed above — do not omit any
 ${scope}
 ${art}
 =====================================
@@ -466,8 +306,7 @@ ${methods}
 DTO / type hints:
 ${dtos}
 
-${outFmt.join("\n")}
-${req.join("\n")}
+${brief.join("\n")}
 `;
 }
 

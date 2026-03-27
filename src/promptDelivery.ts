@@ -61,11 +61,11 @@ async function deliverViaOpenChat(prompt: string): Promise<void> {
   }
 }
 
-async function deliverViaLanguageModel(prompt: string): Promise<boolean> {
+async function deliverViaLanguageModel(prompt: string): Promise<string | true> {
   try {
     const models = await vscode.lm.selectChatModels();
     if (models.length === 0) {
-      return false;
+      return "No registered chat model found via vscode.lm.selectChatModels().";
     }
     const model = models[0];
     const response = await model.sendRequest(
@@ -85,8 +85,9 @@ async function deliverViaLanguageModel(prompt: string): Promise<boolean> {
     });
     await vscode.window.showTextDocument(doc, { preview: false });
     return true;
-  } catch {
-    return false;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return `Language model error: ${msg}`;
   }
 }
 
@@ -103,7 +104,7 @@ export async function deliverPrompt(
   }
 
   if (mode === "languageModel") {
-    const ok = await vscode.window.withProgress(
+    const result = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
         title: "NestJS Generator: running language model…",
@@ -113,10 +114,10 @@ export async function deliverPrompt(
         return deliverViaLanguageModel(prompt);
       }
     );
-    if (!ok) {
+    if (result !== true) {
       await vscode.env.clipboard.writeText(prompt);
       await vscode.window.showWarningMessage(
-        "No registered chat model (vscode.lm). Prompt copied to clipboard instead."
+        `${result} Prompt copied to clipboard instead.`
       );
     } else {
       await vscode.window.showInformationMessage(

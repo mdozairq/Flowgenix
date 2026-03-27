@@ -2,7 +2,7 @@
   "name": "Flowgenix",
   "displayName": "Flowgenix - flow diagrams, documentation and unit test generation",
   "description": "NestJS CodeLens: pick tests/docs/diagram (multi-select), scoped prompts (AST + regex), save to docs/, flow/, and colocated test/*.spec.ts.",
-  "version": "0.6.4",
+  "version": "1.0.0",
   "publisher": "mdozairq",
   "license": "MIT",
   "keywords": [
@@ -32,7 +32,9 @@
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Testing",
+    "Visualization",
+    "Documentation"
   ],
   "activationEvents": [
     "onLanguage:typescript",

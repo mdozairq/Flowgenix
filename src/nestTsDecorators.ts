@@ -78,6 +78,38 @@ export function joinNestRoute(prefix: string, segment: string): string {
   return "/" + a + "/" + b;
 }
 
+/**
+ * True when the member is a concrete public instance method (not constructor,
+ * private, protected, abstract, or a get/set accessor).
+ */
+export function isPublicMethod(
+  member: ts.ClassElement
+): member is ts.MethodDeclaration {
+  if (!ts.isMethodDeclaration(member)) {
+    return false;
+  }
+  if (!member.name || !ts.isIdentifier(member.name)) {
+    return false;
+  }
+  if (member.name.text === "constructor") {
+    return false;
+  }
+  const mods = ts.canHaveModifiers(member)
+    ? ts.getModifiers(member)
+    : undefined;
+  if (
+    mods?.some(
+      (m) =>
+        m.kind === ts.SyntaxKind.PrivateKeyword ||
+        m.kind === ts.SyntaxKind.ProtectedKeyword ||
+        m.kind === ts.SyntaxKind.AbstractKeyword
+    )
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function routeLabelForMethod(
   classNode: ts.ClassDeclaration,
   method: ts.MethodDeclaration,

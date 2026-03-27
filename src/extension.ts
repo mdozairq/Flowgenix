@@ -171,7 +171,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const embeddedCode = truncateSourceAroundFocus(
           fullCode,
           resolved.methodStartOffset,
-          maxChars ?? 0
+          maxChars
         );
 
         const prompt = buildPrompt(
@@ -190,7 +190,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         const delivery = cfg.get<PromptDeliveryMode>(DELIVERY_KEY, "openChat");
 
-        await deliverPrompt(prompt, delivery ?? "openChat");
+        await deliverPrompt(prompt, delivery);
 
         await vscode.window.showInformationMessage(
           "When the model replies, paste the full message into an editor (or select it), then run **NestJS Generator: Save artifacts from chat response** (or use clipboard if the editor is empty)."

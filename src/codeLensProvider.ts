@@ -1,10 +1,23 @@
 import * as vscode from "vscode";
 import { listMethodGenerateTargets } from "./methodTargetDiscovery";
 
+interface LensCache {
+  version: number;
+  lenses: vscode.CodeLens[];
+}
+
 export class NestCodeLensProvider implements vscode.CodeLensProvider {
+  private cache = new Map<string, LensCache>();
+
   provideCodeLenses(
     document: vscode.TextDocument
   ): vscode.ProviderResult<vscode.CodeLens[]> {
+    const key = document.uri.toString();
+    const cached = this.cache.get(key);
+    if (cached && cached.version === document.version) {
+      return cached.lenses;
+    }
+
     const targets = listMethodGenerateTargets(document);
     const lenses: vscode.CodeLens[] = [];
 
@@ -28,6 +41,7 @@ export class NestCodeLensProvider implements vscode.CodeLensProvider {
       );
     }
 
+    this.cache.set(key, { version: document.version, lenses });
     return lenses;
   }
 }
